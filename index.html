@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulación de pelota rebotando</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 20px;
+      background: #f0f0f0;
+    }
+    canvas {
+      background: white;
+      border: 2px solid black;
+      display: block;
+      margin: 20px auto;
+    }
+    input, button {
+      margin: 5px;
+      padding: 8px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Simulación de rebote con pérdida de energía</h2>
+  <p>Ingresa la altura inicial (en metros):</p>
+  <input type="number" id="alturaInput" value="5" min="1" max="20">
+  <button onclick="iniciar()">Iniciar simulación</button>
+  
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <p id="info"></p>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let y, vy, floor, alturaInicial, energiaInicial;
+    const g = 9.8; // gravedad (m/s²)
+    const escala = 50; // 50 px = 1 m
+    const radio = 15;
+    let coefRestitucion = 0.7; // pérdida de energía en cada rebote
+
+    let lastTime = null;
+
+    function iniciar() {
+      const h = parseFloat(document.getElementById("alturaInput").value);
+      if (isNaN(h) || h <= 0) {
+        alert("Por favor ingresa una altura válida.");
+        return;
+      }
+
+      alturaInicial = h;
+      energiaInicial = g * h; // m=1 kg
+      floor = canvas.height - 20; 
+
+      // Posición inicial en píxeles
+      y = floor - h * escala;
+      vy = 0;
+
+      lastTime = null;
+      requestAnimationFrame(animar);
+
+      document.getElementById("info").innerText = 
+        `Altura inicial: ${h.toFixed(2)} m | Energía potencial inicial: ${energiaInicial.toFixed(2)} J`;
+    }
+
+    function animar(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      let dt = (timestamp - lastTime) / 1000; // en segundos
+      lastTime = timestamp;
+
+      // Ecuaciones de movimiento
+      vy += g * dt * escala; // velocidad en px/s
+      y += vy * dt;
+
+      // Rebote
+      if (y + radio >= floor) {
+        y = floor - radio;
+        vy = -vy * coefRestitucion;
+      }
+
+      // Dibujar
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Piso
+      ctx.beginPath();
+      ctx.moveTo(0, floor);
+      ctx.lineTo(canvas.width, floor);
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+
+      // Pelota
+      ctx.beginPath();
+      ctx.arc(canvas.width/2, y, radio, 0, Math.PI * 2);
+      ctx.fillStyle = "red";
+      ctx.fill();
+
+      // Continuar animación mientras el rebote sea significativo
+      if (Math.abs(vy) > 0.5 || Math.abs(floor - y - radio) > 0.5) {
+        requestAnimationFrame(animar);
+      }
+    }
+  </script>
+</body>
+</html>
