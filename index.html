@@ -1,107 +1,186 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Simulación de pelota rebotando</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 20px;
-      background: #f3f3f3;
-    }
-    canvas {
-      background: white;
-      border: 2px solid black;
-      display: block;
-      margin: 20px auto;
-    }
-    input, button {
-      margin: 5px;
-      padding: 8px;
-      font-size: 16px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Energía Eólica</title>
+    <style>
+        /* Estilos Generales */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        h1, h2 {
+            color: #00796b; /* Un verde azulado */
+            border-bottom: 2px solid #b2dfdb;
+            padding-bottom: 5px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        p {
+            line-height: 1.6;
+        }
+        .info-box {
+            background-color: #e0f2f1;
+            border-left: 5px solid #00796b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        /* Estilos del Simulador */
+        .simulator-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+
+        /* Torre Eólica (Turbina) */
+        .turbine {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .rotor-base {
+            width: 10px;
+            height: 100px;
+            background-color: #607d8b;
+            position: relative;
+            z-index: 1;
+        }
+        .tower {
+            width: 80px;
+            height: 400px;
+            background: linear-gradient(to top, #78909c, #cfd8dc);
+            border-radius: 4px 4px 0 0;
+        }
+        .blades-container {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            animation: spin 3s infinite linear; /* Animación de giro */
+        }
+        .blade {
+            width: 10px;
+            height: 80px;
+            background-color: #37474f;
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            transform-origin: 5px 65px; /* Punto de pivote */
+            border-radius: 5px;
+        }
+        .blade:nth-child(1) { transform: rotate(0deg); }
+        .blade:nth-child(2) { transform: rotate(120deg); }
+        .blade:nth-child(3) { transform: rotate(240deg); }
+
+        /* Animación de Giro */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Línea de Transmisión */
+        .transmission-line {
+            width: 150px;
+            height: 5px;
+            background: repeating-linear-gradient(
+                90deg,
+                #ff9800, /* Naranja/Electricidad */
+                #ff9800 10px,
+                transparent 10px,
+                transparent 20px
+            );
+            /* Simula el flujo de energía */
+            animation: flow 1s infinite linear;
+            margin: 0 20px;
+        }
+        @keyframes flow {
+            from { background-position: 0px; }
+            to { background-position: -20px; }
+        }
+
+        /* Red Eléctrica (Símbolo de Ciudad/Red) */
+        .grid {
+            width: 100px;
+            height: 100px;
+            border: 5px solid #00796b;
+            background-color: #ccff90;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #004d40;
+        }
+    </style>
 </head>
 <body>
-  <h2>Simulación de rebote con pérdida de energía</h2>
-  <p>Ingresa la altura inicial (en metros):</p>
-  <input type="number" id="alturaInput" value="5" min="1" max="20">
-  <button onclick="iniciar()">Iniciar simulación</button>
-  
-  <canvas id="canvas" width="400" height="400"></canvas>
-  <p id="info"></p>
 
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+<div class="container">
+    <h1>🌪️ Simulador Básico de Energía Eólica</h1>
 
-    let y, vy, floor, alturaInicial, energiaInicial;
-    const g = 9.8; // gravedad (m/s²)
-    const escala = 50; // 50 px = 1 m
-    const radio = 15;
-    let coefRestitucion = 0.7; // pérdida de energía en cada rebote
+    <div class="info-box">
+        <h2>¿Qué es la Energía Eólica?</h2>
+        <p>La **energía eólica** es una fuente de energía renovable que utiliza la **fuerza del viento** para generar electricidad. El viento mueve las palas de una turbina eólica (aerogenerador), la cual, a través de una caja de engranajes y un generador, convierte la energía cinética del movimiento en **energía eléctrica** limpia y sostenible. Es una alternativa clave para reducir la dependencia de combustibles fósiles.</p>
+    </div>
 
-    let lastTime = null;
+    <hr>
 
-    function iniciar() {
-      const h = parseFloat(document.getElementById("alturaInput").value);
-      if (isNaN(h) || h <= 0) {
-        alert("Por favor ingresa una altura válida.");
-        return;
-      }
+    <div class="info-box">
+        <h2>Matriz Energética Global y en Argentina</h2>
+        <p>La **matriz energética mundial** sigue dominada por los combustibles fósiles (carbón, petróleo y gas natural), aunque la participación de las renovables (eólica, solar, hidroeléctrica, etc.) crece rápidamente.</p>
+        <p>En **Argentina**, la matriz se basa fuertemente en el **gas natural** y la **hidroelectricidad**. La **eólica** ha tenido un desarrollo notable en la última década, principalmente en la Patagonia, y es un pilar importante en la estrategia nacional para diversificar y descarbonizar la producción de energía, buscando cumplir con objetivos de energías renovables establecidos por ley.</p>
+    </div>
 
-      alturaInicial = h;
-      energiaInicial = g * h; // m=1 kg
-      floor = canvas.height - 20; 
+    <hr>
 
-      // Posición inicial en píxeles
-      y = floor - h * escala;
-      vy = 0;
+    <h2>Generación y Transporte a la Red Eléctrica (Simulador)</h2>
+    <p>A continuación, se visualiza el proceso simplificado: el viento hace girar las aspas, se genera electricidad, y esta se transporta a la red.</p>
+    <p>⚡ **Estado:** El viento es suficiente. La turbina está generando electricidad.</p>
 
-      lastTime = null;
-      requestAnimationFrame(animar);
+    <div class="simulator-section">
+        <div class="turbine">
+            <div class="blades-container">
+                <div class="blade"></div>
+                <div class="blade"></div>
+                <div class="blade"></div>
+            </div>
+            <div class="rotor-base"></div>
+            <div class="tower"></div>
+            <p>1. **Generación**</p>
+            <p>(El viento hace girar las aspas)</p>
+        </div>
 
-      document.getElementById("info").innerText = 
-        `Altura inicial: ${h.toFixed(2)} m | Energía potencial inicial: ${energiaInicial.toFixed(2)} J`;
-    }
+        <div class="transmission-line"></div>
+        <p>2. **Transporte**</p>
 
-    function animar(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      let dt = (timestamp - lastTime) / 1000; // en segundos
-      lastTime = timestamp;
+        <div class="grid">
+            RED ELÉCTRICA
+            <br>
+            (Consumo)
+        </div>
+    </div>
 
-      // Ecuaciones de movimiento
-      vy += g * dt * escala; // velocidad en px/s
-      y += vy * dt;
+    <hr>
 
-      // Rebote
-      if (y + radio >= floor) {
-        y = floor - radio;
-        vy = -vy * coefRestitucion;
-      }
+    <p>Este simulador es un modelo conceptual. En una aplicación real, se podría cambiar la velocidad del viento (variable de entrada) y ver cómo la velocidad de giro (animación) y la potencia generada (salida) se ajustan.</p>
+</div>
 
-      // Dibujar
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Piso
-      ctx.beginPath();
-      ctx.moveTo(0, floor);
-      ctx.lineTo(canvas.width, floor);
-      ctx.strokeStyle = "black";
-      ctx.stroke();
-
-      // Pelota
-      ctx.beginPath();
-      ctx.arc(canvas.width/2, y, radio, 0, Math.PI * 2);
-      ctx.fillStyle = "red";
-      ctx.fill();
-
-      // Continuar animación mientras el rebote sea significativo
-      if (Math.abs(vy) > 0.5 || Math.abs(floor - y - radio) > 0.5) {
-        requestAnimationFrame(animar);
-      }
-    }
-  </script>
 </body>
 </html>
